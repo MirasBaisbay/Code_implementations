@@ -40,6 +40,41 @@ class RNN(nn.Module):
         return out
 
 
+class GRU(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.gru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size * sequence_length, num_classes)
+
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+
+        out, _ = self.gru(x, h0)
+        out = out.reshape(out.shape[0], -1)
+        out = self.fc(out)
+        return out
+
+
+class LSTM(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size * sequence_length, num_classes)
+
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+
+        out, _ = self.lstm(x, (h0, c0))
+        out = out.reshape(out.shape[0], -1)
+        out = self.fc(out)
+        return out
+
+
 # Load the data
 train_dataset = datasets.MNIST(root='datasets/',
                                train=True,
@@ -54,7 +89,7 @@ train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
 # Initialize the network
-model = RNN(input_size, hidden_size, num_layers, num_classes).to(device)
+model = LSTM(input_size, hidden_size, num_layers, num_classes).to(device)
 
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
@@ -100,9 +135,17 @@ def check_accuracy(loader, model):
     return num_correct / num_samples
 
 
-print(f"Accuracy on training set: {check_accuracy(train_loader, model)*100:2f}")
-print(f"Accuracy on test set: {check_accuracy(test_loader, model)*100:.2f}")
+print(f"Accuracy on training set: {check_accuracy(train_loader, model) * 100:2f}")
+print(f"Accuracy on test set: {check_accuracy(test_loader, model) * 100:.2f}")
 
-
+# RNN:
 # Accuracy on training set: 96.866669
 # Accuracy on test set: 96.51
+
+# GRU:
+# Accuracy on training set: 99.340004
+# Accuracy on test set: 98.90
+
+# LSTM:
+# Accuracy on training set: 99.205002
+# Accuracy on test set: 98.74
